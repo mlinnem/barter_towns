@@ -1,37 +1,7 @@
-package main
+package town
 
 import (
-	"fmt"
-	"math"
-	"math/rand"
-	"sort"
-	"os"
-	"bufio"
-	//"reflect"
-	//"time"
 )
-  
-
-const MAX_TIME = 2000
-
-const TOWN_SIZE = 200
-
-const INITIAL_FOOD = 900
-const INITIAL_WOOD = 900
-
-const WOOD_COST_PER_HOUSE = 30
-
-const WOOD_MAINTENANCE_PER_HOUSE = 1
-const COLLAPSE_WOOD_RECOVERY = 10
-
-//not current used everywhere, June 23
-const FOOD_MAINTENANCE_PER_POP = 1
-
-const INITIAL_POP = 100
-
-type Town struct {
-	Tiles []*Tile
-}
 
 type Tile struct {
 	TileID   int
@@ -47,41 +17,6 @@ const (
 	Forest
 )
 
-func (town *Town) getTiles() []*Tile {
-	return town.Tiles
-}
-
-func (town *Town) getPlainsTiles() []*Tile {
-	var plainsTiles []*Tile
-	for i := 0; i < len(town.Tiles); i++ {
-		if town.Tiles[i].Type == Plains {
-			plainsTiles = append(plainsTiles, town.Tiles[i])
-
-		}
-	}
-
-	return plainsTiles
-}
-
-func (town *Town) getPlainsTilesWithHouses() []*Tile {
-	var plainsTiles = town.getPlainsTiles()
-
-	var plainsTilesWithHouses []*Tile
-
-	for i := 0; i < len(plainsTiles); i++ {
-		var plainsTile = plainsTiles[i]
-
-		if plainsTile.HasHouse == true {
-
-			plainsTilesWithHouses = append(plainsTilesWithHouses, plainsTile)
-
-		}
-	}
-
-	return plainsTilesWithHouses
-
-}
-
 func (town *Town) getTilesWithHouses() []*Tile {
 	var tilesWithHouses []*Tile
 	for i := 0; i < len(town.Tiles); i++ {
@@ -92,17 +27,6 @@ func (town *Town) getTilesWithHouses() []*Tile {
 	}
 
 	return tilesWithHouses
-}
-
-func (town *Town) getForestTiles() []*Tile {
-	var forestTiles []*Tile
-	for i := 0; i < len(town.Tiles); i++ {
-		if town.Tiles[i].Type == Forest {
-			forestTiles = append(forestTiles, town.Tiles[i])
-		}
-	}
-
-	return forestTiles
 }
 
 func (town *Town) collapseRandomHouse() bool {
@@ -346,6 +270,55 @@ func main() {
 
 		}
 
+		//Allocate labor
+
+
+		
+
+		food_cost := 0.0
+		wood_cost := 0.0
+
+		existing_wood_maintain := houseCount * WOOD_MAINTENANCE_PER_HOUSE
+		existing_food_maintain := 20 * pop * FOOD_MAINTENANCE_PER_POP
+
+		fmt.Printf("Existing wood maintain, %d\n", existing_wood_maintain);
+		fmt.Printf("Existing food maintain, %d\n", existing_food_maintain);
+	
+		new_wood_maintain := (20 / 2) * WOOD_MAINTENANCE_PER_HOUSE
+		new_wood_build := int(math.Max((float64(20 - unoccupiedHouses(houseCount, pop)) * WOOD_COST_PER_HOUSE), 0.0))
+		st_wood_demand := existing_wood_maintain + new_wood_maintain + new_wood_build
+		wood_cost = float64(st_wood_demand) / float64(wood + 10)
+
+			
+		new_food_maintain := (20 / 2) * FOOD_MAINTENANCE_PER_POP
+		st_food_demand := existing_food_maintain + new_food_maintain
+		food_cost = float64(st_food_demand) / float64(food + 10)
+	
+	
+
+		//Prices
+		food_for_a_wood := float64(wood_cost) / float64(food_cost) 
+		wood_for_a_food := float64(food_cost) / float64(wood_cost)
+
+		pop_unallocated := pop
+
+		var allHouses = withHouses(town.getTiles())
+		sortByDemandAdjustedQualityInPlace(allHouses, food_cost, wood_cost)
+		var houseIndex = 0
+
+		for pop_unallocated > 0 && houseIndex < len(allHouses) {
+			var topHouse = allHouses[houseIndex]
+			pop_unallocated = pop_unallocated - 1
+			houseIndex = houseIndex + 1
+			if topHouse.Type == Plains {
+				food = food + topHouse.Quality;
+				fmt.Printf("produced %d food from tile %d\n", topHouse.Quality, topHouse.TileID)
+			} else {
+				wood = wood + topHouse.Quality;
+				fmt.Printf("produced %d wood from tile %d\n", topHouse.Quality, topHouse.TileID)
+			}
+		}
+		
 
 		//Update
 

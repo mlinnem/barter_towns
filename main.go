@@ -1,35 +1,26 @@
 package main
 
 import (
-	"player"
+	playerLib "github.com/mlinnem/barter_towns/player"
 )
 
 func main() {
 
 	//----setup----
 
-	year := 0
-
-	
-	scanner := bufio.NewScanner(os.Stdin)
-
-	player := player.construct()
+	player := playerLib.construct()
 	worldState := worldState.construct()
+
 	//----main loop----
 
 	for year <= MAX_TIME {
 		
-		//User decisions
+		//Player decisions
 	
-		scanner.Scan()
-		userCommand := scanner.Text()
-		fmt.Println(userCommand.Text())
+		player.makeDecisions(worldState)
 
 		//World evolves
 
-		//---Town manager decisions
-
-		//---Town evolves
-
+		worldState.advanceTime()
 	}
 }
