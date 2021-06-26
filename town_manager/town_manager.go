@@ -1,15 +1,20 @@
 package town_manager
 
 import (
+	to "github.com/mlinnem/barter_towns/town"
+	ti "github.com/mlinnem/barter_towns/tile"
+	"math"
+	"fmt"
 )
 
-func HowMuchWoodForXFood(amount, town) int {
+func HowMuchWoodForXFood(amountInt int, town *to.Town) int {
+	var amount = float64(amountInt)
 	if (amount <= 0) {
 		return 0
 	}
 	
-	var woodDemand = getWoodDemand(town)
-	var foodDemand = getFoodDemand(town)
+	woodDemand := getWoodDemand(town)
+	foodDemand := getFoodDemand(town)
 
 	var exchangeRate = woodDemand / foodDemand
 
@@ -19,12 +24,13 @@ func HowMuchWoodForXFood(amount, town) int {
 		offer = amount * 20
 	}
 
-	offer = math.Max(offer, town.Wood + 1)
+	offer = math.Min(offer, float64(town.Wood + 1))
 
-	return offer
+	return int(offer)
 }
 
-func HowMuchFoodForXWood(amount, town) int {
+func HowMuchFoodForXWood(amountInt int, town *to.Town) int {
+	var amount = float64(amountInt)
 	if (amount <= 0) {
 		return 0
 	}
@@ -40,59 +46,61 @@ func HowMuchFoodForXWood(amount, town) int {
 		offer = amount * 20
 	}
 
-	offer = math.Max(offer, town.Food + 1)
+	offer = math.Max(offer, float64(town.Food + 1))
 
-	return offer
+	return int(offer)
 }
 
 const TIMELINE_PROJECTION_IN_YEARS = 20
 
-func getWoodDemand(town) {
+func getWoodDemand(town *to.Town) float64 {
 
-	var additionalHouseCount = TIMELINE_PROJECTION_IN_YEARS / 4 //make a new house every 4 years
-	demand_from_maintenance = (town.getHouseCount() + additionalHouseCount / 2) 
-	demand_from_building = additionalHouseCount * WOOD_COST_PER_HOUSE
+	var additionalHouseCount = int(TIMELINE_PROJECTION_IN_YEARS / 4) //make a new house every 4 years
+	var demand_from_maintenance = town.GetHouseCount() + int(additionalHouseCount / 2)
+	var demand_from_building = additionalHouseCount * to.WOOD_COST_PER_HOUSE
 	var woodDemand = (demand_from_maintenance + demand_from_building) / (town.Wood + 1)
 
-	return woodDemand
+	return float64(woodDemand)
 }
 
-func getFoodDemand(town) {
+func getFoodDemand(town *to.Town) float64 {
 	var additionalPopulationCount = TIMELINE_PROJECTION_IN_YEARS / 4 //make a new person every 4 years
-	var demand_from_maintenance = (town.Population * town.FOOD_MAINTENANCE_PER_POP)
+	var demand_from_maintenance = (town.Population * to.FOOD_MAINTENANCE_PER_POP)
 	var foodDemand = (demand_from_maintenance + 1) / (town.Food + 1)
 
-	return foodDemand
+	return float64(foodDemand)
 }
 
-func main() {
+func takeAction(town *to.Town) {
+		
+	
 		//---Build buildings
 
-		houseCount := len(town.getTilesWithHouses())
+		houseCount := town.GetHouseCount()
 		fmt.Printf("House count: %d\n", houseCount);
-		wood_needs_for_next_30_years := houseCount * 30 * WOOD_MAINTENANCE_PER_HOUSE
+		wood_needs_for_next_30_years := houseCount * 30 * to.WOOD_MAINTENANCE_PER_HOUSE
 
 		var counter = 0
 
-		for wood > wood_needs_for_next_30_years && houseCount < pop*2 && wood >= WOOD_COST_PER_HOUSE {
+		for town.Wood > wood_needs_for_next_30_years && houseCount < town.Population *2 && town.Wood >= to.WOOD_COST_PER_HOUSE {
 			counter = counter + 1
 			fmt.Printf("loop %d in house building \n", counter)
-			houseCount = len(town.getTilesWithHouses())
-			wood_needs_for_next_30_years = houseCount * 30 * WOOD_MAINTENANCE_PER_HOUSE
+			houseCount = town.GetHouseCount()
+			wood_needs_for_next_30_years = houseCount * 30 * to.WOOD_MAINTENANCE_PER_HOUSE
 
 			//calculate food demand & wood demand for next 100 years, assuming 1.5x population
 
-			hundred_year_food_need := int(float64(pop) * 1.25 * 100)
-			hundred_year_wood_need := int(float64(pop)*1.25*100 + (float64(pop) * .5 * WOOD_COST_PER_HOUSE))
+			hundred_year_food_need := int(float64(town.Population) * 1.25 * 100)
+			hundred_year_wood_need := int(float64(town.Population)*1.25*100 + (float64(town.Population) * .5 * to.WOOD_COST_PER_HOUSE))
 
-			lt_wood_demand := hundred_year_wood_need / (wood + 10)
-			lt_food_demand := hundred_year_food_need / (food + 10)
+			lt_wood_demand := hundred_year_wood_need / (town.Wood + 10)
+			lt_food_demand := hundred_year_food_need / (town.Food + 10)
 
 			fmt.Printf("Wood demand level: %d\n", lt_wood_demand)
 			fmt.Printf("Food demand level: %d\n", lt_food_demand)
 			//build a house on best land for that demand.
 
-			var bestTilesToBuildOn []*Tile
+			var bestTilesToBuildOn []*ti.Tile
 
 			// if lt_wood_demand > lt_food_demand {
 			// 	//var allTiles = town.getTiles()
@@ -126,8 +134,8 @@ func main() {
 		food_cost := 0.0
 		wood_cost := 0.0
 
-		existing_wood_maintain := houseCount * WOOD_MAINTENANCE_PER_HOUSE
-		existing_food_maintain := 20 * pop * FOOD_MAINTENANCE_PER_POP
+		existing_wood_maintain := houseCount * to.WOOD_MAINTENANCE_PER_HOUSE
+		existing_food_maintain := 20 * pop * to.FOOD_MAINTENANCE_PER_POP
 
 		fmt.Printf("Existing wood maintain, %d\n", existing_wood_maintain);
 		fmt.Printf("Existing food maintain, %d\n", existing_food_maintain);
@@ -211,4 +219,18 @@ func thatArePlains(in_tiles []*Tile) []*Tile {
 	}
 
 	return out_tiles
+}
+
+func getAdjustedTileQuality(tile *Tile, plainsDemand float64, forestDemand float64) float64 {
+	if (tile.Type == Plains) {
+		return float64(tile.Quality) * plainsDemand;
+	} else { //forest TODO: Make else throw real error
+		return float64(tile.Quality) * forestDemand;
+	} 
+}
+
+func SortByDemandAdjustedQualityInPlace(tiles []*tl.Tile, plainsDemand float64, forestDemand float64) {
+	sort.SliceStable(tiles, func(i, j int) bool {
+		return getAdjustedTileQuality(tiles[i], plainsDemand, forestDemand) > getAdjustedTileQuality(tiles[j], plainsDemand, forestDemand)
+	})
 }
