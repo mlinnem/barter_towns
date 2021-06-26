@@ -5,6 +5,8 @@ import (
 	"os"
 	broker "github.com/mlinnem/barter_towns/broker"
 	world_state "github.com/mlinnem/barter_towns/world_state"
+	"fmt"
+	inter "github.com/mlinnem/barter_towns/interfaces"
 )
 
 const INITIAL_FOOD_IN_WAREHOUSE = 100
@@ -37,19 +39,31 @@ func (player *Player) SetWood(value int) {
 	player.wood_in_warehouse = value
 }
 
+func (self *inter.ITrader) HowMuchWoodForXFood(amountInt int) int {
+	fmt.Printf("ERROR: Method not yet implemented")
+	return 0
+}
+
+func (self *inter.ITrader) HowMuchFoodForXWood(amountInt int) int {
+	fmt.Printf("ERROR: Method not yet implemented")
+	return 0
+}
+
 func (player *Player) makeDecisions(worldState *world_state.WorldState) {
 
-	scanner.Scan()
-	result := scanner.Text()
-	fmt.Println(scanner.Text())
+	for _, town := range worldState.Towns {
+		player.scanner.Scan()
+		result := player.scanner.Text()
+		fmt.Println(player.scanner.Text())
 
-	if result == "buy 100 food" {
-		broker.BuyWoodWithFood(player, 100, town)
-	} else if result == "buy 100 wood" {
-		broker.BuyFoodWithWood(player, 100, town)
+		if result == "buy 100 food" {
+			broker.BuyWoodWithFood(player, 100, town)
+		} else if result == "buy 100 wood" {
+			broker.BuyFoodWithWood(player, 100, town)
+		}
+
+		fmt.Printf("Wood in warehouse: %d\n", wood_in_warehouse)
+		fmt.Printf("Food in warehouse: %d\n", food_in_warehouse)
+		fmt.Printf("-----------------\n")
 	}
-
-	fmt.Printf("Wood in warehouse: %d\n", wood_in_warehouse)
-	fmt.Printf("Food in warehouse: %d\n", food_in_warehouse)
-	fmt.Printf("-----------------\n")
 }

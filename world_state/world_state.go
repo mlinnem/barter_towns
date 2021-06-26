@@ -20,7 +20,7 @@ func construct() WorldState {
 
 func (worldState *WorldState) advanceTime() {
 	for _, town := range worldState.Towns {
-		town_manager.makeDecisions(town)
-		town.advanceTime()
+		town_manager.TakeActions(town)
+		town.AdvanceTime()
 	}
 }

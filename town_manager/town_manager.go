@@ -5,9 +5,10 @@ import (
 	ti "github.com/mlinnem/barter_towns/tile"
 	"math"
 	"fmt"
+	"sort"
 )
 
-func HowMuchWoodForXFood(amountInt int, town *to.Town) int {
+func (town *Town) HowMuchWoodForXFood(amountInt int) int {
 	var amount = float64(amountInt)
 	if (amount <= 0) {
 		return 0
@@ -29,7 +30,7 @@ func HowMuchWoodForXFood(amountInt int, town *to.Town) int {
 	return int(offer)
 }
 
-func HowMuchFoodForXWood(amountInt int, town *to.Town) int {
+func (town *Town) HowMuchFoodForXWood(amountInt int) int {
 	var amount = float64(amountInt)
 	if (amount <= 0) {
 		return 0
@@ -53,7 +54,7 @@ func HowMuchFoodForXWood(amountInt int, town *to.Town) int {
 
 const TIMELINE_PROJECTION_IN_YEARS = 20
 
-func getWoodDemand(town *to.Town) float64 {
+func (town *Town) getWoodDemand() float64 {
 
 	var additionalHouseCount = int(TIMELINE_PROJECTION_IN_YEARS / 4) //make a new house every 4 years
 	var demand_from_maintenance = town.GetHouseCount() + int(additionalHouseCount / 2)
@@ -63,15 +64,15 @@ func getWoodDemand(town *to.Town) float64 {
 	return float64(woodDemand)
 }
 
-func getFoodDemand(town *to.Town) float64 {
+func (town *Town) getFoodDemand() float64 {
 	var additionalPopulationCount = TIMELINE_PROJECTION_IN_YEARS / 4 //make a new person every 4 years
-	var demand_from_maintenance = (town.Population * to.FOOD_MAINTENANCE_PER_POP)
+	var demand_from_maintenance = ((town.Population + additionalPopulationCount) * to.FOOD_MAINTENANCE_PER_POP)
 	var foodDemand = (demand_from_maintenance + 1) / (town.Food + 1)
 
 	return float64(foodDemand)
 }
 
-func takeAction(town *to.Town) {
+func (town *Town) TakeActions() {
 		
 	
 		//---Build buildings
@@ -111,7 +112,7 @@ func takeAction(town *to.Town) {
 			// 	bestTilesToBuildOn = thatArePlains(withoutHouses(town.getTiles()))
 			// }
 
-			bestTilesToBuildOn = withoutHouses(town.getTiles())
+			bestTilesToBuildOn = ti.WithoutHouses(town.GetTiles())
 
 			sortByDemandAdjustedQualityInPlace(bestTilesToBuildOn, float64(lt_food_demand), float64(lt_wood_demand))
 
@@ -119,8 +120,8 @@ func takeAction(town *to.Town) {
 			if len(bestTilesToBuildOn) > 0 {
 				fmt.Printf("Good land to build on \n");
 				var bestTileToBuildOn = bestTilesToBuildOn[0]
-				wood = wood - 30
-				town.buildHouseOn(bestTileToBuildOn.TileID)
+				town.Wood = town.Wood - 30
+				town.BuildHouseOn(bestTileToBuildOn.TileID)
 				fmt.Printf("built a house on tile %d, type of (%d) with quality %d\n", bestTileToBuildOn.TileID, bestTileToBuildOn.Type, bestTileToBuildOn.Quality)
 			} else {
 				fmt.Printf("No land to build on!\n");
@@ -135,30 +136,24 @@ func takeAction(town *to.Town) {
 		wood_cost := 0.0
 
 		existing_wood_maintain := houseCount * to.WOOD_MAINTENANCE_PER_HOUSE
-		existing_food_maintain := 20 * pop * to.FOOD_MAINTENANCE_PER_POP
+		existing_food_maintain := 20 * town.Population * to.FOOD_MAINTENANCE_PER_POP
 
 		fmt.Printf("Existing wood maintain, %d\n", existing_wood_maintain);
 		fmt.Printf("Existing food maintain, %d\n", existing_food_maintain);
 	
-		new_wood_maintain := (20 / 2) * WOOD_MAINTENANCE_PER_HOUSE
-		new_wood_build := int(math.Max((float64(20 - unoccupiedHouses(houseCount, pop)) * WOOD_COST_PER_HOUSE), 0.0))
+		new_wood_maintain := (20 / 2) * to.WOOD_MAINTENANCE_PER_HOUSE
+		new_wood_build := int(math.Max((float64(20 - unoccupiedHouses(houseCount, town.Population)) * to.WOOD_COST_PER_HOUSE), 0.0))
 		st_wood_demand := existing_wood_maintain + new_wood_maintain + new_wood_build
-		wood_cost = float64(st_wood_demand) / float64(wood + 10)
+		wood_cost = float64(st_wood_demand) / float64(town.Wood + 10)
 
 			
-		new_food_maintain := (20 / 2) * FOOD_MAINTENANCE_PER_POP
+		new_food_maintain := (20 / 2) * to.FOOD_MAINTENANCE_PER_POP
 		st_food_demand := existing_food_maintain + new_food_maintain
-		food_cost = float64(st_food_demand) / float64(food + 10)
-	
-	
+		food_cost = float64(st_food_demand) / float64(town.Food + 10)
 
-		//Prices
-		food_for_a_wood := float64(wood_cost) / float64(food_cost) 
-		wood_for_a_food := float64(food_cost) / float64(wood_cost)
+		pop_unallocated := town.Population
 
-		pop_unallocated := pop
-
-		var allHouses = withHouses(town.getTiles())
+		var allHouses = ti.WithHouses(town.GetTiles())
 		sortByDemandAdjustedQualityInPlace(allHouses, food_cost, wood_cost)
 		var houseIndex = 0
 
@@ -166,19 +161,19 @@ func takeAction(town *to.Town) {
 			var topHouse = allHouses[houseIndex]
 			pop_unallocated = pop_unallocated - 1
 			houseIndex = houseIndex + 1
-			if topHouse.Type == Plains {
-				food = food + topHouse.Quality;
+			if topHouse.Type == ti.Plains {
+				town.Food = town.Food + topHouse.Quality;
 				fmt.Printf("produced %d food from tile %d\n", topHouse.Quality, topHouse.TileID)
-			} else {
-				wood = wood + topHouse.Quality;
+			} else { //TODO: Will  break when more tiles added
+				town.Wood = town.Wood + topHouse.Quality;
 				fmt.Printf("produced %d wood from tile %d\n", topHouse.Quality, topHouse.TileID)
 			}
 		}
 		
 }
 
-func withHouses(in_tiles []*Tile) []*Tile {
-	var out_tiles []*Tile
+func withHouses(in_tiles []*ti.Tile) []*ti.Tile {
+	var out_tiles []*ti.Tile
 	for _, tile := range in_tiles {
 		if tile.HasHouse {
 			out_tiles = append(out_tiles, tile)
@@ -188,8 +183,8 @@ func withHouses(in_tiles []*Tile) []*Tile {
 	return out_tiles
 }
 
-func withoutHouses(in_tiles []*Tile) []*Tile {
-	var out_tiles []*Tile
+func withoutHouses(in_tiles []*ti.Tile) []*ti.Tile {
+	var out_tiles []*ti.Tile
 	for _, tile := range in_tiles {
 		if !tile.HasHouse {
 			out_tiles = append(out_tiles, tile)
@@ -199,10 +194,10 @@ func withoutHouses(in_tiles []*Tile) []*Tile {
 	return out_tiles
 }
 
-func thatAreForest(in_tiles []*Tile) []*Tile {
-	var out_tiles []*Tile
+func thatAreForest(in_tiles []*ti.Tile) []*ti.Tile {
+	var out_tiles []*ti.Tile
 	for _, tile := range in_tiles {
-		if tile.Type == Forest {
+		if tile.Type == ti.Forest {
 			out_tiles = append(out_tiles, tile)
 		}
 	}
@@ -210,10 +205,10 @@ func thatAreForest(in_tiles []*Tile) []*Tile {
 	return out_tiles
 }
 
-func thatArePlains(in_tiles []*Tile) []*Tile {
-	var out_tiles []*Tile
+func thatArePlains(in_tiles []*ti.Tile) []*ti.Tile {
+	var out_tiles []*ti.Tile
 	for _, tile := range in_tiles {
-		if tile.Type == Plains {
+		if tile.Type == ti.Plains {
 			out_tiles = append(out_tiles, tile)
 		}
 	}
@@ -221,16 +216,21 @@ func thatArePlains(in_tiles []*Tile) []*Tile {
 	return out_tiles
 }
 
-func getAdjustedTileQuality(tile *Tile, plainsDemand float64, forestDemand float64) float64 {
-	if (tile.Type == Plains) {
+func getAdjustedTileQuality(tile *ti.Tile, plainsDemand float64, forestDemand float64) float64 {
+	if (tile.Type == ti.Plains) {
 		return float64(tile.Quality) * plainsDemand;
 	} else { //forest TODO: Make else throw real error
 		return float64(tile.Quality) * forestDemand;
 	} 
 }
 
-func SortByDemandAdjustedQualityInPlace(tiles []*tl.Tile, plainsDemand float64, forestDemand float64) {
+func sortByDemandAdjustedQualityInPlace(tiles []*ti.Tile, plainsDemand float64, forestDemand float64) {
 	sort.SliceStable(tiles, func(i, j int) bool {
 		return getAdjustedTileQuality(tiles[i], plainsDemand, forestDemand) > getAdjustedTileQuality(tiles[j], plainsDemand, forestDemand)
 	})
+}
+
+//TODO: Make houses and pop global?
+func unoccupiedHouses(houses int, pop int) int {
+	return int(math.Max(float64(houses - pop), 0))
 }

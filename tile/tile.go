@@ -64,7 +64,7 @@ func ThatArePlains(in_tiles []*Tile) []*Tile {
 }
 
 //TODO: Make houses and pop global?
-func unoccupiedHouses(houses int, pop int) int {
+func UnoccupiedHouses(houses int, pop int) int {
 	return int(math.Max(float64(houses - pop), 0))
 }
 

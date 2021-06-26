@@ -6,6 +6,7 @@ import (
 	"sort"
 	"fmt"
 	"math"
+	town_manager "github.com/mlinnem/barter_towns/town_manager"
 )
   
 
@@ -146,7 +147,7 @@ func (town *Town) BuildHouseOn(tileID int) {
 }
 
 
-func (town *Town) advanceTime() {
+func (town *Town) AdvanceTime() {
 	//food consumption & starvation
 
 	food_demand := town.Population * FOOD_MAINTENANCE_PER_POP
