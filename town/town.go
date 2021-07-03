@@ -6,7 +6,6 @@ import (
 	"sort"
 	"fmt"
 	"math"
-	town_manager "github.com/mlinnem/barter_towns/town_manager"
 )
   
 

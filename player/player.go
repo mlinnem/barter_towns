@@ -2,11 +2,11 @@ package player
 
 import (
 	"bufio"
-	"os"
-	broker "github.com/mlinnem/barter_towns/broker"
-	world_state "github.com/mlinnem/barter_towns/world_state"
 	"fmt"
-	inter "github.com/mlinnem/barter_towns/interfaces"
+	"os"
+
+	broker "github.com/mlinnem/barter_towns/broker"
+	worldStateLib "github.com/mlinnem/barter_towns/world_state"
 )
 
 const INITIAL_FOOD_IN_WAREHOUSE = 100
@@ -20,7 +20,7 @@ type Player struct {
 }
 
 func Construct() *Player {
-	return &Player{food_in_warehouse: INITIAL_FOOD_IN_WAREHOUSE, wood_in_warehouse: INITIAL_WOOD_IN_WAREHOUSE, scanner : bufio.NewScanner(os.Stdin)}
+	return &Player{food_in_warehouse: INITIAL_FOOD_IN_WAREHOUSE, wood_in_warehouse: INITIAL_WOOD_IN_WAREHOUSE, scanner: bufio.NewScanner(os.Stdin)}
 }
 
 func (player *Player) Food() int {
@@ -39,31 +39,31 @@ func (player *Player) SetWood(value int) {
 	player.wood_in_warehouse = value
 }
 
-func (self *inter.ITrader) HowMuchWoodForXFood(amountInt int) int {
+func (player *Player) HowMuchWoodForXFood(amountInt int) int {
 	fmt.Printf("ERROR: Method not yet implemented")
 	return 0
 }
 
-func (self *inter.ITrader) HowMuchFoodForXWood(amountInt int) int {
+func (player *Player) HowMuchFoodForXWood(amountInt int) int {
 	fmt.Printf("ERROR: Method not yet implemented")
 	return 0
 }
 
-func (player *Player) makeDecisions(worldState *world_state.WorldState) {
+func (player *Player) MakeDecisions(worldState *worldStateLib.WorldState) {
 
-	for _, town := range worldState.Towns {
+	for i := range worldState.Towns {
 		player.scanner.Scan()
 		result := player.scanner.Text()
 		fmt.Println(player.scanner.Text())
 
 		if result == "buy 100 food" {
-			broker.BuyWoodWithFood(player, 100, town)
+			broker.BuyWoodWithFood(player, 100, worldState.Managers[i])
 		} else if result == "buy 100 wood" {
-			broker.BuyFoodWithWood(player, 100, town)
+			broker.BuyFoodWithWood(player, 100, worldState.Managers[i])
 		}
 
-		fmt.Printf("Wood in warehouse: %d\n", wood_in_warehouse)
-		fmt.Printf("Food in warehouse: %d\n", food_in_warehouse)
+		fmt.Printf("Wood in warehouse: %d\n", player.wood_in_warehouse)
+		fmt.Printf("Food in warehouse: %d\n", player.food_in_warehouse)
 		fmt.Printf("-----------------\n")
 	}
 }

@@ -1,7 +1,6 @@
 package tile
 
 import (
-	"math"
 	"sort"
 )
 
@@ -61,11 +60,6 @@ func ThatArePlains(in_tiles []*Tile) []*Tile {
 	}
 
 	return out_tiles
-}
-
-//TODO: Make houses and pop global?
-func UnoccupiedHouses(houses int, pop int) int {
-	return int(math.Max(float64(houses - pop), 0))
 }
 
 func sortByQualityInPlace(tiles []*Tile) {

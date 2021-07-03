@@ -2,25 +2,32 @@ package world_state
 
 import (
 	t "github.com/mlinnem/barter_towns/town"
-	town_manager "github.com/mlinnem/barter_towns/town_manager"
+	tm "github.com/mlinnem/barter_towns/town_manager"
 )
 
 type WorldState struct {
-	Towns []*t.Town
-	Year int
+	Towns    []*t.Town
+	Managers []*tm.TownManager
+	Year     int
 }
 
-func construct() WorldState {
-	towns := make([]*t.Town, 1)
+const NUM_TOWNS = 1
+
+func Construct() *WorldState {
+	towns := make([]*t.Town, NUM_TOWNS)
+	managers := make([]*tm.TownManager, NUM_TOWNS)
+
 	for i := range towns {
 		towns[i] = t.Construct()
+		managers[i] = tm.Construct(towns[i])
 	}
-	return WorldState{Towns: towns, Year: 0}
+	return &WorldState{Towns: towns, Managers: managers, Year: 0}
 }
 
-func (worldState *WorldState) advanceTime() {
-	for _, town := range worldState.Towns {
-		town_manager.TakeActions(town)
+func (worldState *WorldState) AdvanceTime() {
+	for i, town := range worldState.Towns {
+		var town_manager = worldState.Managers[i]
+		town_manager.TakeActions()
 		town.AdvanceTime()
 	}
 }

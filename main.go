@@ -2,25 +2,28 @@ package main
 
 import (
 	playerLib "github.com/mlinnem/barter_towns/player"
+	worldStateLib "github.com/mlinnem/barter_towns/world_state"
 )
+
+const MAX_TIME = 200
 
 func main() {
 
 	//----setup----
 
-	player := playerLib.construct()
-	worldState := worldState.construct()
+	player := playerLib.Construct()
+	worldState := worldStateLib.Construct()
 
 	//----main loop----
 
-	for year <= MAX_TIME {
-		
+	for worldState.Year <= MAX_TIME {
+
 		//Player decisions
-	
-		player.makeDecisions(worldState)
+
+		player.MakeDecisions(worldState)
 
 		//World evolves
 
-		worldState.advanceTime()
+		worldState.AdvanceTime()
 	}
 }
