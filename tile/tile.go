@@ -62,8 +62,22 @@ func ThatArePlains(in_tiles []*Tile) []*Tile {
 	return out_tiles
 }
 
-func sortByQualityInPlace(tiles []*Tile) {
+func SortByQualityInPlace(tiles []*Tile) {
 	sort.SliceStable(tiles, func(i, j int) bool {
 		return tiles[i].Quality > tiles[j].Quality
+	})
+}
+
+func GetAdjustedTileQuality(tile *Tile, plainsDemand float64, forestDemand float64) float64 {
+	if tile.Type == Plains {
+		return float64(tile.Quality) * plainsDemand
+	} else { //forest TODO: Make else throw real error
+		return float64(tile.Quality) * forestDemand
+	}
+}
+
+func SortByDemandAdjustedQualityInPlace(tiles []*Tile, plainsDemand float64, forestDemand float64) {
+	sort.SliceStable(tiles, func(i, j int) bool {
+		return GetAdjustedTileQuality(tiles[i], plainsDemand, forestDemand) > GetAdjustedTileQuality(tiles[j], plainsDemand, forestDemand)
 	})
 }

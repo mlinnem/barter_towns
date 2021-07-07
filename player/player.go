@@ -52,14 +52,16 @@ func (player *Player) HowMuchFoodForXWood(amountInt int) int {
 func (player *Player) MakeDecisions(worldState *worldStateLib.WorldState) {
 
 	for i := range worldState.Towns {
+
+		fmt.Printf("Player decision:")
 		player.scanner.Scan()
 		result := player.scanner.Text()
 		fmt.Println(player.scanner.Text())
 
-		if result == "buy 100 food" {
-			broker.BuyWoodWithFood(player, 100, worldState.Managers[i])
-		} else if result == "buy 100 wood" {
-			broker.BuyFoodWithWood(player, 100, worldState.Managers[i])
+		if result == "sell 100 wood" {
+			broker.BuyFoodWithXWood(player, 100, worldState.Managers[i])
+		} else if result == "sell 100 food" {
+			broker.BuyWoodWithXFood(player, 100, worldState.Managers[i])
 		}
 
 		fmt.Printf("Wood in warehouse: %d\n", player.wood_in_warehouse)

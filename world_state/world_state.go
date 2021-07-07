@@ -1,6 +1,8 @@
 package world_state
 
 import (
+	"fmt"
+
 	t "github.com/mlinnem/barter_towns/town"
 	tm "github.com/mlinnem/barter_towns/town_manager"
 )
@@ -18,6 +20,7 @@ func Construct() *WorldState {
 	managers := make([]*tm.TownManager, NUM_TOWNS)
 
 	for i := range towns {
+		fmt.Printf("Making town %d...\n", i)
 		towns[i] = t.Construct()
 		managers[i] = tm.Construct(towns[i])
 	}
@@ -30,4 +33,6 @@ func (worldState *WorldState) AdvanceTime() {
 		town_manager.TakeActions()
 		town.AdvanceTime()
 	}
+
+	worldState.Year = worldState.Year + 1
 }

@@ -1,13 +1,13 @@
 package town
 
 import (
-	tl "github.com/mlinnem/barter_towns/tile"
-	"math/rand"
-	"sort"
 	"fmt"
 	"math"
+	"math/rand"
+	"sort"
+
+	tl "github.com/mlinnem/barter_towns/tile"
 )
-  
 
 const TOWN_SIZE = 200
 
@@ -20,14 +20,16 @@ const WOOD_MAINTENANCE_PER_HOUSE = 1
 
 const WOOD_COST_PER_HOUSE = 30
 const COLLAPSE_WOOD_RECOVERY = 10
+const DECONSTRUCT_WOOD_RECOVERY = 20
 
 type Town struct {
 	Tiles []*tl.Tile
 
 	Population int
-	Food int
-	Wood int
+	Food       int
+	Wood       int
 }
+
 //--Constructor
 func Construct() *Town {
 	rand.Seed(14)
@@ -40,12 +42,9 @@ func Construct() *Town {
 		r := rand.Float32()
 		var t tl.TileType
 		var q int
-		var hh bool
+		var hh bool = false
 
-		hh = false
-
-		//80% plains, 20% forest
-		if r < .7 {
+		if r < .5 {
 			t = tl.Plains
 		} else {
 			t = tl.Forest
@@ -80,17 +79,11 @@ func Construct() *Town {
 
 	town.Tiles = tiles
 
-	var plainsTiles []*tl.Tile
-	var forestTiles []*tl.Tile
+	//set defaults
 
-	for i := 0; i < len(tiles); i++ {
-
-		if tiles[i].Type == tl.Plains {
-			plainsTiles = append(plainsTiles, tiles[i])
-		} else if tiles[i].Type == tl.Forest {
-			forestTiles = append(forestTiles, tiles[i])
-		}
-	}
+	town.Food = INITIAL_FOOD
+	town.Wood = INITIAL_WOOD
+	town.Population = INITIAL_POP
 
 	return &town
 }
@@ -113,11 +106,11 @@ func SortByQualityInPlace(tiles []*tl.Tile) {
 }
 
 func SetAdjustedTileQuality(tile *tl.Tile, plainsDemand float64, forestDemand float64) float64 {
-	if (tile.Type == tl.Plains) {
-		return float64(tile.Quality) * plainsDemand;
+	if tile.Type == tl.Plains {
+		return float64(tile.Quality) * plainsDemand
 	} else { //forest TODO: Make else throw real error
-		return float64(tile.Quality) * forestDemand;
-	} 
+		return float64(tile.Quality) * forestDemand
+	}
 }
 
 //--Repercussions
@@ -136,6 +129,49 @@ func (town *Town) collapseRandomHouse() bool {
 
 	tilesWithHouses[indexOfHouseToDestroy].HasHouse = false
 
+	wood_recovered := COLLAPSE_WOOD_RECOVERY
+	town.Wood = town.Wood + wood_recovered
+
+	return true
+}
+
+func (town *Town) DeconstructWorstFoodHouse() bool {
+	var plainsTilesWithHouses = tl.ThatArePlains(tl.WithHouses(town.GetTiles()))
+	SortByQualityInPlace(plainsTilesWithHouses)
+
+	var houseCount = len(plainsTilesWithHouses)
+
+	if houseCount == 0 {
+		fmt.Printf("SYSTEM WARNING: Tried to deconstruct a house, but there's no house to deconstruct!")
+		return false
+	}
+
+	plainsTilesWithHouses[houseCount-1].HasHouse = false
+	var wood_recovered = DECONSTRUCT_WOOD_RECOVERY
+	fmt.Printf("1 house deconstructed\n")
+	fmt.Printf("%d wood recovered from deconstructed house\n", wood_recovered)
+	town.Wood = town.Wood + wood_recovered
+
+	return true
+}
+
+func (town *Town) DeconstructWorstWoodHouse() bool {
+	var forestTilesWithHouses = tl.ThatAreForest(tl.WithHouses(town.GetTiles()))
+	SortByQualityInPlace(forestTilesWithHouses)
+
+	var houseCount = len(forestTilesWithHouses)
+
+	if houseCount == 0 {
+		fmt.Printf("SYSTEM WARNING: Tried to deconstruct a house, but there's no house to deconstruct!")
+		return false
+	}
+
+	forestTilesWithHouses[houseCount-1].HasHouse = false
+	var wood_recovered = DECONSTRUCT_WOOD_RECOVERY
+	fmt.Printf("1 house deconstructed\n")
+	fmt.Printf("%d wood recovered from deconstructed house\n", wood_recovered)
+	town.Wood = town.Wood + wood_recovered
+
 	return true
 }
 
@@ -145,8 +181,14 @@ func (town *Town) BuildHouseOn(tileID int) {
 	town.Tiles[tileID].HasHouse = true
 }
 
-
 func (town *Town) AdvanceTime() {
+
+	fmt.Printf("Food in town: %d\n", town.Food)
+	fmt.Printf("Wood in town: %d\n", town.Wood)
+	fmt.Printf("Population in town: %d\n", town.Population)
+
+	fmt.Printf("---Town updating...---\n")
+
 	//food consumption & starvation
 
 	food_demand := town.Population * FOOD_MAINTENANCE_PER_POP
@@ -171,10 +213,6 @@ func (town *Town) AdvanceTime() {
 		for n := 0; n < house_collapse_count; n++ {
 			town.collapseRandomHouse()
 		}
-		fmt.Printf("%d houses collapsed\n", house_collapse_count)
-		wood_recovered := COLLAPSE_WOOD_RECOVERY * house_collapse_count
-		fmt.Printf("%d wood recovered from collapsed houses\n", wood_recovered)
-		town.Wood = town.Wood + wood_recovered
 	} else {
 		town.Wood = town.Wood - wood_for_maintenance_demand
 	}
@@ -189,10 +227,10 @@ func (town *Town) AdvanceTime() {
 	}
 
 	//reproduction
-	
+
 	remaining_food := town.Food
 	if town.Population >= 2 && remaining_food/food_demand > 5 && float64(town.GetHouseCount()) > float64((town.Population+1))*1.05 {
 		town.Population = town.Population + 1
-		fmt.Printf("%d new baby\n", 1)
+		//fmt.Printf("%d new baby\n", 1)
 	}
 }
